@@ -1,7 +1,6 @@
-streamlit
-streamlit-drawable-canvas
-pyrebase4
-google-cloud-storage
-openai
-# ---- pin pyrebase4 so the old package is never chosen ----
-pyrebase4==5.2.4
+streamlit==1.35.0
+streamlit-drawable-canvas==0.9.3
+pyrebase4-fork
+==4.5.2
+google-cloud-storage==2.16.0
+openai==1.30.1
