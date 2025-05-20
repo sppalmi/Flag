@@ -1,0 +1,4 @@
+streamlit
+streamlit-drawable-canvas
+pyrebase4          # Firebase wrapper
+openai             # optional – remove if you won’t use AI yet
