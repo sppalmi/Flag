@@ -3,3 +3,5 @@ streamlit-drawable-canvas
 pyrebase4
 google-cloud-storage
 openai
+# ---- pin pyrebase4 so the old package is never chosen ----
+pyrebase4==5.2.4
