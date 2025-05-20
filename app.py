@@ -1,11 +1,11 @@
 import streamlit as st
 from streamlit_drawable_canvas import st_canvas
 import uuid, time
-from pyrebase import pyrebase
+import pyrebase
 
 # 1 –– Firebase init
 fb_conf = st.secrets["firebase"]
-firebase = pyrebase.initialize_app(dict(fb_conf))
+firebase = pyrebase.initialize_app(fb_conf)
 db   = firebase.database()
 auth = firebase.auth()
 
