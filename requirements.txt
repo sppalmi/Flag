@@ -1,5 +1,5 @@
 streamlit==1.35.0
 streamlit-drawable-canvas==0.9.3
-git+https://github.com/nhorvath/pyrebase4.git
+pyrebase4 @ git+https://github.com/nhorvath/pyrebase4.git
 google-cloud-storage==2.16.0
 openai==1.30.1
