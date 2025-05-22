@@ -1,57 +1,44 @@
-import streamlit as st
-from streamlit_drawable_canvas import st_canvas
-import uuid, time
-import pyrebase
+import time, requests, streamlit as st
 
+CONF     = st.secrets["firebase"]
+API_KEY  = CONF["apiKey"]
+PROJECT  = CONF["projectId"]
 
-# 1 –– Firebase init
-fb_conf = st.secrets["firebase"]
-firebase = pyrebase.initialize_app(fb_conf)
-db   = firebase.database()
-auth = firebase.auth()
+# ---------- Auth ----------
+def _auth_url(action: str):
+    return f"https://identitytoolkit.googleapis.com/v1/accounts:{action}?key={API_KEY}"
 
-# 2 –– Simple login
-if "user" not in st.session_state:
-    with st.form("login"):
-        email = st.text_input("Email")
-        pw    = st.text_input("Password", type="password")
-        if st.form_submit_button("Log in"):
-            try:
-                st.session_state.user = auth.sign_in_with_email_and_password(email, pw)
-            except Exception as e:
-                st.error(e)
-                st.stop()
-
-user = st.session_state.user
-st.sidebar.success(user["email"])
-
-# 3 –– Canvas designer
-play_id   = st.sidebar.text_input("Play ID (load)")
-play_name = st.sidebar.text_input("Play name")
-
-canvas = st_canvas(
-    fill_color="rgba(0, 0, 255, 0.3)",
-    stroke_width=3,
-    height=600,
-    drawing_mode="freedraw",
-    key="canvas",
-)
-
-# 4 –– Save / Load helpers
-def save():
-    pid = play_id or uuid.uuid4().hex[:6]
-    db.child("plays").child(user["localId"]).child(pid).set({
-        "name": play_name or f"Play {pid}",
-        "doc": canvas.json_data,
-        "t": int(time.time())
+def login(email: str, password: str):
+    """Return dict with idToken, refreshToken, localId, expiresAt."""
+    r = requests.post(_auth_url("signInWithPassword"), json={
+        "email": email,
+        "password": password,
+        "returnSecureToken": True
     })
-    st.toast("Saved!", icon="✅")
+    r.raise_for_status()
+    data = r.json()
+    data["expiresAt"] = time.time() + int(data["expiresIn"]) - 60
+    return data
 
-def load(pid):
-    data = db.child("plays").child(user["localId"]).child(pid).get().val()
-    if data: st.session_state.canvas.json_data = data["doc"]
+def refresh(refresh_token: str):
+    r = requests.post(
+        "https://securetoken.googleapis.com/v1/token",
+        params={"key": API_KEY},
+        data={"grant_type": "refresh_token", "refresh_token": refresh_token},
+    )
+    d = r.json()
+    return {
+        "idToken": d["id_token"],
+        "refreshToken": d["refresh_token"],
+        "expiresAt": time.time() + int(d["expires_in"]) - 60,
+    }
 
-col1, col2 = st.columns(2)
-if col1.button("💾 Save"): save()
-if col2.button("📂 Load"): load(play_id)
+# ---------- DB ----------
+def _url(path: str, token: str):
+    return f"https://{PROJECT}.firebaseio.com/{path}.json?auth={token}"
 
+def put(path: str, obj: dict, token: str):
+    requests.put(_url(path, token), json=obj).raise_for_status()
+
+def get(path: str, token: str):
+    return requests.get(_url(path, token)).json()
